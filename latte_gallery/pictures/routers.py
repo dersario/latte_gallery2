@@ -8,7 +8,6 @@ from latte_gallery.security.permissions import Authenticated
 
 pictures_router = APIRouter(tags=["Картинки"])
 
-
 @pictures_router.post(
     "/pictures",
     summary="Создать новую картинку",
