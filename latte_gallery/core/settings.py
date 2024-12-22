@@ -6,6 +6,5 @@ from latte_gallery.accounts.schemas import AccountCreateSchema
 class AppSettings(BaseSettings):
     model_config = SettingsConfigDict(secrets_dir="/run/secrets")
 
-    token_secret: str
     db_url: str
     initial_accounts: list[AccountCreateSchema]

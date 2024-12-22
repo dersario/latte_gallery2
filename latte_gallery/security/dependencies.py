@@ -17,8 +17,7 @@ from latte_gallery.core.schemas import  Token
 from latte_gallery.core.dependencies import SessionDep
 
 SecuritySchema = HTTPBasic(auto_error=False)
-load_dotenv(find_dotenv())
-TOKEN_SECRET = os.getenv("adc")
+TOKEN_SECRET = "ne rabotaet dotenv"
 
 repository = AccountRepository
 
