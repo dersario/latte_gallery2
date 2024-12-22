@@ -13,8 +13,6 @@ from latte_gallery.core.settings import AppSettings
 from latte_gallery.pictures.repositories import PictureRepository
 from latte_gallery.pictures.routers import pictures_router
 from latte_gallery.pictures.services import PictureService
-from latte_gallery.security.dependencies import authenticate_user
-
 
 def create_app():
     settings = AppSettings()
