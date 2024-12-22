@@ -14,9 +14,10 @@ from latte_gallery.accounts.schemas import (
 )
 from latte_gallery.core.dependencies import AccountServiceDep, SessionDep
 from latte_gallery.core.schemas import Page, PageNumber, PageSize
-from latte_gallery.security.dependencies import AuthenticatedAccount, AuthorizedAccount
+from latte_gallery.security.dependencies import AuthorizedAccount
 from latte_gallery.security.permissions import Anonymous, Authenticated, IsAdmin
 from passlib.hash import pbkdf2_sha256 as pas_hash
+from latte_gallery.accounts.repository import AuthenticatedAccount
 
 accounts_router = APIRouter(prefix="/accounts", tags=["Аккаунты"])
 
