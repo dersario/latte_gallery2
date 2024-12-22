@@ -15,6 +15,7 @@ from latte_gallery.core.dependencies import AccountServiceDep, SessionDep
 from latte_gallery.security.permissions import BasePermission
 from latte_gallery.accounts.repository import AccountRepository
 from latte_gallery.core.schemas import  Token
+from latte_gallery.accounts.repository import AccountRepository
 
 
 
@@ -22,8 +23,8 @@ SecuritySchema = HTTPBasic(auto_error=False)
 cred = Annotated[HTTPBasicCredentials | None, Depends(SecuritySchema)]
 load_dotenv()
 
-async def login_for_access_token(self, login: str, password: str, session: AsyncSession) -> Token:
-    account = await self._repository.find_by_login(login, session)
+async def login_for_access_token(login: str, password: str, session: AsyncSession) -> Token:
+    account = await AccountRepository.find_by_login(login, session)
     if account is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED)
     elif pbkdf2_sha256.verify(password, account.password):
@@ -43,7 +44,7 @@ async def authenticate_user(
     if credentials is None:
         return None
 
-    token = await account_service.login_for_access_token(credentials.username, credentials.password, session)
+    token = await login_for_access_token(login=credentials.username,password=credentials.password,session=session)
     user_data = jwt.decode(token, TOKEN_SECRET, algorithms=["HS256"])
     account = await AccountRepository.find_by_login(user_data["login"], session)
     return account
