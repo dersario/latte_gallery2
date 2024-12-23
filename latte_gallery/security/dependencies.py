@@ -1,8 +1,6 @@
 import jwt
-import os
 from datetime import timezone, timedelta, datetime
 from typing import Annotated
-from dotenv import load_dotenv, find_dotenv
 
 from fastapi import Depends, status, Request
 from fastapi.exceptions import HTTPException
