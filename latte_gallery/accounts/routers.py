@@ -11,17 +11,23 @@ from latte_gallery.accounts.schemas import (
     AccountSchema,
     AccountUpdateSchema,
     Role,
+    GetTokenSchema
 )
 from latte_gallery.core.dependencies import AccountServiceDep, SessionDep
 from latte_gallery.core.schemas import Page, PageNumber, PageSize
 from latte_gallery.security.dependencies import AuthorizedAccount
 from latte_gallery.security.permissions import Anonymous, Authenticated, IsAdmin
 from passlib.hash import pbkdf2_sha256 as pas_hash
-from latte_gallery.security.dependencies import AuthenticatedAccount
+from latte_gallery.security.dependencies import AuthenticatedAccount, create_token
 
 accounts_router = APIRouter(prefix="/accounts", tags=["Аккаунты"])
 logger = logging.getLogger(__name__)
 
+
+@accounts_router.post("/token", summary="Получение токена")
+async def get_token(body: GetTokenSchema):
+    token = await create_token(body.login, body.password)
+    return token
 
 @accounts_router.post(
     "/register",
@@ -33,7 +39,6 @@ async def register_account(
     body: AccountRegisterSchema, account_service: AccountServiceDep, session: SessionDep
 ) -> AccountSchema:
     pas = pas_hash.hash(body.password)
-    logger.info("Token is: ", pas)
     account = await account_service.create(
         AccountCreateSchema(
             login=body.login,

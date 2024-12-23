@@ -43,3 +43,7 @@ class AccountUpdateSchema(BaseModel):
 
 class AccountPasswordUpdateSchema(BaseModel):
     password: PasswordStr
+
+class GetTokenSchema(BaseModel):
+    login: LoginStr
+    password: PasswordStr

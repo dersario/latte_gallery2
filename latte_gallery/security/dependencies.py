@@ -4,17 +4,16 @@ from typing import Annotated
 
 from fastapi import Depends, status, Request
 from fastapi.exceptions import HTTPException
-from fastapi.security.http import HTTPBasic, HTTPBasicCredentials
+from fastapi.security.http import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from passlib.hash import pbkdf2_sha256
 
 from latte_gallery.accounts.models import Account
 from latte_gallery.security.permissions import BasePermission
 from latte_gallery.accounts.repository import AccountRepository
-from latte_gallery.core.schemas import  Token
-from latte_gallery.core.dependencies import SessionDep
+from latte_gallery.core.dependencies import SessionDep, AccountServiceDep
 
-SecuritySchema = HTTPBasic(auto_error=False)
+SecuritySchema = HTTPBearer(auto_error=False)
 TOKEN_SECRET = "ne rabotaet dotenv"
 
 repository = AccountRepository
@@ -30,32 +29,35 @@ async def create_access_token(data: dict, expires_delta: timedelta | None = None
     encoded_jwt = jwt.encode(to_encode, TOKEN_SECRET, algorithm="HS256")
     return encoded_jwt
 
-async def login_for_access_token(login: str, password: str, session: AsyncSession) -> Token:
-    account = await repository.find_by_login_without_self(login, session)
-    if account is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED)
-    elif pbkdf2_sha256.verify(password, account.password):
-        raise HTTPException(status.HTTP_405_METHOD_NOT_ALLOWED)
-    access_token_expires = timedelta(minutes=30)
-    access_token = await create_access_token(
-        data={"login": login, "password": password}, expires_delta=access_token_expires
-    )
-    return Token(access_token=access_token, token_type="bearer")
 
 async def authenticate_user(
-    credentials: Annotated[HTTPBasicCredentials | None, Depends(SecuritySchema)],
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(SecuritySchema)],
+    account_service: AccountServiceDep,
     session: SessionDep,
 ):
     if credentials is None:
         return None
+    token = credentials.credentials
+    user_data = jwt.decode(token, TOKEN_SECRET, algorithms=["HS256"])
 
-    token = await login_for_access_token(credentials.username, pbkdf2_sha256.hash(credentials.password), session)
-    user_data = jwt.decode(token.access_token, TOKEN_SECRET, algorithms=["HS256"])
-    account = await repository.find_by_login_without_self(user_data["login"], session)
-    return account
+    return await account_service.authorize(
+        user_data["login"], user_data["password"], session
+    )
+
 
 AuthenticatedAccount = Annotated[Account | None, Depends(authenticate_user)]
 
+    
+
+async def create_token(
+    login: str,
+    password: str,
+):
+    if login is None or password is None:
+        return None
+    password = pbkdf2_sha256.hash(password)
+    token = await create_access_token(data={"login": login, "password": password}, expires_delta=timedelta(minutes=30))
+    return token
 
 class AuthorizedAccount:
     def __init__(self, permission: BasePermission):
