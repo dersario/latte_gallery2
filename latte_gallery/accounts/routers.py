@@ -24,10 +24,14 @@ accounts_router = APIRouter(prefix="/accounts", tags=["Аккаунты"])
 logger = logging.getLogger(__name__)
 
 
+
 @accounts_router.post("/token", summary="Получение токена")
-async def get_token(body: GetTokenSchema):
-    token = await create_token(body.login, body.password)
+async def get_token(body: GetTokenSchema, session: SessionDep, account_service: AccountServiceDep):
+    account = await account_service.authorize(body.login, body.password, session)
+    id = account.id
+    token = await create_token(id)
     return token
+
 
 @accounts_router.post(
     "/register",
@@ -109,16 +113,14 @@ async def update_my_account(body: AccountUpdateSchema) -> AccountSchema:
     )
 
 
-@accounts_router.put("/my/password", summary="Обновить пароль своего аккаунта")
+@accounts_router.put("/my/password", summary="Обновить пароль своего аккаунта", dependencies=[Depends(AuthorizedAccount(Authenticated()))],)
 async def update_my_account_password(
     body: AccountPasswordUpdateSchema,
+    account: AuthenticatedAccount,
+    account_service: AccountServiceDep,
+    session: SessionDep
 ) -> AccountSchema:
-    return AccountSchema(
-        id=1,
-        login="user1",
-        name="Вася Пупкин",
-        role=Role.USER,
-    )
+    return await account_service.update_password_by_id(account.id, body.old_password, body.new_password, session)
 
 
 @accounts_router.put("/{id}", summary="Обновить аккаунт по идентификатору")

@@ -40,9 +40,7 @@ async def authenticate_user(
     token = credentials.credentials
     user_data = jwt.decode(token, TOKEN_SECRET, algorithms=["HS256"])
 
-    return await account_service.authorize(
-        user_data["login"], user_data["password"], session
-    )
+    return await account_service.find_by_id(user_data["id"], session)
 
 
 AuthenticatedAccount = Annotated[Account | None, Depends(authenticate_user)]
@@ -50,13 +48,9 @@ AuthenticatedAccount = Annotated[Account | None, Depends(authenticate_user)]
     
 
 async def create_token(
-    login: str,
-    password: str,
+    id,
 ):
-    if login is None or password is None:
-        return None
-    password = pbkdf2_sha256.hash(password)
-    token = await create_access_token(data={"login": login, "password": password}, expires_delta=timedelta(minutes=30))
+    token = await create_access_token(data={"id": id}, expires_delta=timedelta(minutes=30))
     return token
 
 class AuthorizedAccount:

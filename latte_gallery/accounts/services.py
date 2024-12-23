@@ -35,8 +35,8 @@ class AccountService:
         account = await self._repository.find_by_login(login, session)
         if account is None:
             raise HTTPException(status.HTTP_401_UNAUTHORIZED)
-        elif pbkdf2_sha256.verify(password, account.password):
-            raise HTTPException(status.HTTP_403_FORBIDDEN)
+        elif not(pbkdf2_sha256.verify(password, account.password)):
+            raise HTTPException(status.HTTP_418_IM_A_TEAPOT)
         return account
 
     async def find_by_id(self, id: int, session: AsyncSession):
@@ -65,13 +65,14 @@ class AccountService:
         return account
 
     async def update_password_by_id(
-        self, id: int, password: str, session: AsyncSession
+        self, id: int, old_password: str, new_password: str, session: AsyncSession
     ):
         account = await self._repository.find_by_id(id, session)
         if account is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND)
-
-        account.password = pbkdf2_sha256.hash(password)
+        elif not(pbkdf2_sha256.verify(old_password, account.password)):
+            raise HTTPException(status.HTTP_418_IM_A_TEAPOT)
+        account.password = pbkdf2_sha256.hash(new_password)
 
         await session.commit()
 
@@ -97,7 +98,7 @@ class AccountsCreator:
                 if a is not None:
                     logger.info(f"Account with login={account.login} already exists")
                     continue
-                
+                account["password"] = pbkdf2_sha256.hash(account["password"])
 
                 a = Account(**account.model_dump())
                 session.add(a)
